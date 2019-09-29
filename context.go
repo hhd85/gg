@@ -1,4 +1,5 @@
 // Package gg provides a simple API for rendering 2D graphics in pure Go.
+// hhd85 修改
 package gg
 
 import (
