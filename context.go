@@ -691,8 +691,10 @@ func (dc *Context) DrawImageAnchored(im image.Image, x, y int, ax, ay float64) {
 // Text Functions
 
 func (dc *Context) SetFontFace(fontFace font.Face) {
-	dc.fontFace = fontFace
-	dc.fontHeight = float64(fontFace.Metrics().Height) / 64
+	if dc.fontFace != fontFace {
+		dc.fontFace = fontFace
+		dc.fontHeight = float64(fontFace.Metrics().Height) / 64
+	}
 }
 
 func (dc *Context) LoadFontFace(path string, points float64) error {
