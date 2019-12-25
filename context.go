@@ -711,6 +711,35 @@ func (dc *Context) FontHeight() float64 {
 	return dc.fontHeight
 }
 
+//DrawChar 绘制单个字符,无效字符时返回 false
+func (dc *Context) DrawChar(c rune, x, y float64) bool {
+	d := &font.Drawer{
+		Dst:  dc.im,
+		Src:  image.NewUniform(dc.color),
+		Face: dc.fontFace,
+		Dot:  fixp(x, y),
+	}
+
+	dr, mask, maskp, advance, ok := d.Face.Glyph(d.Dot, c)
+	if !ok || (dr.Min.X == dr.Max.X && dr.Min.Y == dr.Max.Y) { //通过xy判断是否绘制有字符
+		// TODO: is falling back on the U+FFFD glyph the responsibility of
+		// the Drawer or the Face?1
+		// TODO: set prevC = '\ufffd'?
+		return false
+	}
+	sr := dr.Sub(dr.Min)
+	transformer := draw.BiLinear
+	fx, fy := float64(dr.Min.X), float64(dr.Min.Y)
+	m := dc.matrix.Translate(fx, fy)
+	s2d := f64.Aff3{m.XX, m.XY, m.X0, m.YX, m.YY, m.Y0}
+	transformer.Transform(d.Dst, s2d, d.Src, sr, draw.Over, &draw.Options{
+		SrcMask:  mask,
+		SrcMaskP: maskp,
+	})
+	d.Dot.X += advance
+	return true
+}
+
 func (dc *Context) drawString(im *image.RGBA, s string, x, y float64) {
 	d := &font.Drawer{
 		Dst:  im,
@@ -727,7 +756,7 @@ func (dc *Context) drawString(im *image.RGBA, s string, x, y float64) {
 		dr, mask, maskp, advance, ok := d.Face.Glyph(d.Dot, c)
 		if !ok {
 			// TODO: is falling back on the U+FFFD glyph the responsibility of
-			// the Drawer or the Face?
+			// the Drawer or the Face?1
 			// TODO: set prevC = '\ufffd'?
 			continue
 		}
